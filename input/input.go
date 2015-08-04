@@ -48,11 +48,6 @@ func checkScrollLeft() {
 func visibleLine() []rune {
 	width := display.LineWidth()
 
-	if len(currentLine)-currentScroll <= 0 && currentScroll != 0 {
-		currentScroll -= width
-		return visibleLine()
-	}
-
 	if len(currentLine) <= width {
 		return currentLine
 	}
@@ -95,6 +90,11 @@ func Backspace() {
 	if cursor == 0 {
 		return
 	}
+	width := display.LineWidth()
+	if cursor-currentScroll <= 0 && currentScroll != 0 {
+		currentScroll -= width
+		updateCursor()
+	}
 	if len(currentLine) <= cursor {
 		currentLine = currentLine[:cursor-1]
 		cursor--
@@ -103,7 +103,6 @@ func Backspace() {
 		cursor--
 	}
 
-	width := display.LineWidth()
 	if cursor == width {
 		currentScroll = 0
 		updateCursor()
