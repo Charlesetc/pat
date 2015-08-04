@@ -130,8 +130,13 @@ func CursorAtBeginning() {
 	updateCursor()
 }
 func CursorAtEnd() {
+	width := display.LineWidth()
 	cursor = len(currentLine)
-	currentScroll = len(currentLine) - display.LineWidth()
+	if len(currentLine) < width {
+		currentScroll = 0
+	} else {
+		currentScroll = len(currentLine) - width
+	}
 	display.ShowLine(visibleLine())
 	updateCursor()
 }

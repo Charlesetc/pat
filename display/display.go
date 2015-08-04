@@ -8,6 +8,10 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
+const (
+	padding int = 2
+)
+
 var currentFile, currentLine []rune
 var width, height, currentScroll, currentCursor int
 var topBar bool
@@ -19,7 +23,7 @@ func overLines(str []rune, f func(int, int, int, rune)) {
 	var x, y int
 	for i, r := range str {
 		f(i, x, y, r)
-		if r == '\n' || x >= width {
+		if r == '\n' || x >= (width-(3*padding)) {
 			y++
 			x = 0
 		} else { // not a newline
@@ -41,7 +45,7 @@ func Draw() {
 	}
 	overLines(viewSection(), func(i, x, y int, r rune) {
 		if r != '\n' {
-			termbox.SetCell(x, y+offset, r, 0, 0)
+			termbox.SetCell(x+padding, y+offset, r, 0, 0)
 		}
 	})
 	termbox.Flush()
