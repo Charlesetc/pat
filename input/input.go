@@ -15,6 +15,7 @@ var Log func([]rune)
 var LogS func(string)
 
 func AddRune(r rune) {
+	Log([]rune(fmt.Sprintf("%d, %d", len(currentLine), cursor)))
 	if len(currentLine) <= cursor {
 		currentLine = append(currentLine, r)
 		cursor++
@@ -25,11 +26,12 @@ func AddRune(r rune) {
 	copy(copyLine, currentLine)
 	currentLine = append(append(copyLine[:cursor], r),
 		currentLine[cursor:]...)
-	// checkScrollRight()
+	if cursor-currentScroll >= display.LineWidth() {
+		checkScrollRight()
+	}
 	cursor++
 }
 
-//Log([]rune(fmt.Sprintf("%d, %d", len(currentLine), cursor)))
 func checkScrollRight() {
 	width := display.LineWidth()
 	if len(currentLine)-currentScroll > width {
@@ -45,6 +47,12 @@ func checkScrollLeft() {
 
 func visibleLine() []rune {
 	width := display.LineWidth()
+
+	if len(currentLine)-currentScroll <= 0 && currentScroll != 0 {
+		currentScroll -= width
+		return visibleLine()
+	}
+
 	if len(currentLine) <= width {
 		return currentLine
 	}
@@ -97,7 +105,7 @@ func Backspace() {
 
 	width := display.LineWidth()
 	if cursor == width {
-		LogS(fmt.Sprintf("%d, %d", currentScroll, cursor))
+		currentScroll = 0
 		updateCursor()
 	}
 }
