@@ -2,11 +2,7 @@
 
 package input
 
-import (
-	"fmt"
-
-	"github.com/charlesetc/pat/display"
-)
+import "github.com/charlesetc/pat/display"
 
 var currentLine []rune
 var cursor int
@@ -15,7 +11,7 @@ var Log func([]rune)
 var LogS func(string)
 
 func AddRune(r rune) {
-	Log([]rune(fmt.Sprintf("%d, %d", len(currentLine), cursor)))
+	// Log([]rune(fmt.Sprintf("%d, %d", len(currentLine), cursor)))
 	if len(currentLine) <= cursor {
 		currentLine = append(currentLine, r)
 		cursor++
@@ -79,7 +75,7 @@ func CursorRight() {
 		cursor++
 	}
 	if cursor > width+currentScroll {
-		LogS(fmt.Sprintf("-- %d", cursor))
+		// LogS(fmt.Sprintf("-- %d", cursor))
 		currentScroll++
 		display.ShowLine(visibleLine())
 	}

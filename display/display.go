@@ -2,11 +2,7 @@
 
 package display
 
-import (
-	"fmt"
-
-	"github.com/nsf/termbox-go"
-)
+import "github.com/nsf/termbox-go"
 
 const (
 	padding int = 2
@@ -105,7 +101,7 @@ func viewSection() []rune {
 	if end == 0 { // Didn't reach the end.
 		end = len(currentFile) - 2
 	}
-	Log([]rune(fmt.Sprintf("%d - %d, %d", start, end, currentScroll)))
+	// Log([]rune(fmt.Sprintf("%d - %d, %d", start, end, currentScroll)))
 	return currentFile[start:end]
 }
 
@@ -130,10 +126,6 @@ func Init(bar bool) {
 	termbox.Init()
 	Resize()
 	topBar = bar
-}
-
-func ShowLine(line []rune) {
-	currentLine = line
 }
 
 func LineWidth() int {
@@ -169,6 +161,14 @@ func SetCursor(x int) {
 
 func Flush() {
 	termbox.Flush()
+}
+
+func ShowLine(line []rune) {
+	currentLine = line
+}
+
+func ShowFile(file []rune) {
+	currentFile = file
 }
 
 func Show(main []rune, line []rune) {

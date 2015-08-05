@@ -6,14 +6,54 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/charlesetc/pat/display"
+	"github.com/charlesetc/pat/editor"
 	"github.com/charlesetc/pat/input"
 	"github.com/nsf/termbox-go"
 )
 
 var Log func([]rune)
 var files []string // filenames
+// var editors []*editor // editors for the filenames
+var ed *editor.Editor // the current editor.
+
+func parseLine(line string) [][]string {
+	commands := make([][]string, 0)
+
+	// this works, it might be ugly, but it works.
+	line = strings.Replace(line, "\\/", "&#sslash;", -1)
+	line = strings.Replace(line, "/", "&#slash;", -1)
+	line = strings.Replace(line, "&#sslash;", "/", -1)
+	lines := strings.Split(line, "&#slash;")
+	var i int
+	var command []string
+	var c string
+Lines:
+	for i < len(lines) {
+		c = lines[i]
+		c = strings.Replace(c, " ", "", -1) // Get rid of space
+		switch {
+		case len(c) > 0 && c[0] == '?':
+			command = []string{"?", c[1 : len(c)-1]}
+			break
+		case i == len(lines)-1:
+			break Lines
+		case c == "s":
+			command = []string{c, lines[i+1], lines[i+2]}
+			i++
+		default:
+			command = []string{c, lines[i+1]}
+		}
+		i += 2
+		commands = append(commands, command)
+	}
+
+	LogS(fmt.Sprint(commands))
+
+	return commands
+}
 
 func makeLog() func([]rune) {
 	file, err := os.Create(".log")
@@ -69,8 +109,23 @@ func Poll() {
 			input.AddRune(' ')
 			input.Draw()
 		case e.Key == 13: // Return
-			Log(input.Runes())
+			runes := input.Runes()
 			input.Reset()
+			if len(runes) == 0 {
+				break
+			}
+			// err := ed.Command(string(runes[0]), string(runes[1:]))
+			// if err != nil {
+			// 	panic(err) // for the time being..
+			// }
+
+			commands := parseLine(string(runes))
+			for _, command := range commands {
+				ed.Command(command[0], command[1:])
+			}
+
+			display.ShowFile([]rune(ed.String()))
+			display.Draw()
 
 		// Cursor Movement
 		case e.Key == 65515:
@@ -110,6 +165,14 @@ func init() {
 		files = append(files, arg)
 	}
 
+	if contains(flags, "-v") || contains(flags, "--version") {
+		fmt.Println("The Glorious Pat Text Editor : v0.0.1")
+		os.Exit(0)
+	} else if contains(flags, "-rc") {
+		fmt.Println("Yay Recurse Center!")
+		os.Exit(0)
+	}
+
 	if len(files) == 0 {
 		fmt.Println("usage: pat [file]")
 		os.Exit(0)
@@ -121,6 +184,7 @@ func init() {
 	display.Log = Log
 	input.Log = Log
 	input.LogS = LogS
+	editor.LogS = LogS
 }
 
 func main() {
@@ -130,6 +194,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	ed = editor.NewEditor(bytes)
 
 	display.Show([]rune(string(bytes)), []rune{})
 	display.Draw()
