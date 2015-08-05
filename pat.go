@@ -35,14 +35,24 @@ Lines:
 		c = lines[i]
 		c = strings.Replace(c, " ", "", -1) // Get rid of space
 		switch {
+		// Parse no-argument ones.
+		case c == "d":
+			command = []string{c}
+
+		// Parse ?re?
 		case len(c) > 0 && c[0] == '?':
 			command = []string{"?", c[1 : len(c)-1]}
 			break
+
+		// Do nothing at the end.
 		case i == len(lines)-1:
 			break Lines
+
+		// Parse S
 		case c == "s":
 			command = []string{c, lines[i+1], lines[i+2]}
 			i++
+		// Everything else gets one argument.
 		default:
 			command = []string{c, lines[i+1]}
 		}

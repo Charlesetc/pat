@@ -4,7 +4,7 @@
 package editor
 
 import (
-	"errors"
+	"fmt"
 	"regexp"
 )
 
@@ -27,28 +27,31 @@ func apply(f func([]int) [][]int, ints [][]int) [][]int {
 func (ed *Editor) Command(name string, args []string) error {
 	switch name {
 	case "x":
-		if len(args) != 1 {
-			return errors.New("Wrong number of arguments for the 'x' command")
-		}
 		re, err := regexp.Compile(args[0])
 		if err != nil {
 			return err
 		}
 		ed.dot = apply(func(s []int) [][]int { return ed.xCommand(s, re) }, ed.dot)
 	case "a":
-		if len(args) != 1 {
-			return errors.New("Wrong number of arguments for the 'a' command")
-		}
-		ed.dot = ed.aCommand(ed.dot, []byte(args[0]))
+		ed.dot = ed.insertCommand(ed.dot, []byte(args[0]), false)
+	case "i":
+		ed.dot = ed.insertCommand(ed.dot, []byte(args[0]), true)
+	case "d":
+		LogS(fmt.Sprint(ed.dot))
+		ed.dot = ed.dCommand(ed.dot)
+		LogS(fmt.Sprint(ed.dot))
 	case "g":
-		if len(args) != 1 {
-			return errors.New("Wrong number of arguments for the 'g' command")
-		}
 		re, err := regexp.Compile(args[0])
 		if err != nil {
 			return err
 		}
-		ed.dot = apply(func(s []int) [][]int { return ed.gCommand(s, re) }, ed.dot)
+		ed.dot = apply(func(s []int) [][]int { return ed.matchCommand(s, re, true) }, ed.dot)
+	case "y":
+		re, err := regexp.Compile(args[0])
+		if err != nil {
+			return err
+		}
+		ed.dot = apply(func(s []int) [][]int { return ed.matchCommand(s, re, false) }, ed.dot)
 	}
 
 	return nil
@@ -71,20 +74,25 @@ func (ed *Editor) xCommand(scope []int, re *regexp.Regexp) [][]int {
 	return scopes
 }
 
-func (ed *Editor) gCommand(scope []int, re *regexp.Regexp) [][]int {
-	if re.Match(ed.file[scope[0]:scope[1]]) {
+func (ed *Editor) matchCommand(scope []int, re *regexp.Regexp, keep bool) [][]int {
+	// Strange xor simplification
+	if re.Match(ed.file[scope[0]:scope[1]]) == keep {
 		return [][]int{scope}
 	}
 	return [][]int{}
 }
 
 // Assumes increasing indicies
-func (ed *Editor) aCommand(scopes [][]int, addition []byte) [][]int {
+func (ed *Editor) insertCommand(scopes [][]int, addition []byte, beginning bool) [][]int {
 	var offset, off, index int
 	outScopes := make([][]int, 0)
 	for _, scope := range scopes {
 		off = len(addition)
-		index = scope[1] + offset
+		if beginning {
+			index = scope[0] + offset
+		} else {
+			index = scope[1] + offset
+		}
 
 		ed.file = ed.file[:len(ed.file)+off]
 		copy(ed.file[index+off:], ed.file[index:])
@@ -93,6 +101,19 @@ func (ed *Editor) aCommand(scopes [][]int, addition []byte) [][]int {
 		outScopes = append(outScopes, []int{scope[0] + offset, index + off})
 
 		offset += off
+	}
+	return outScopes
+}
+
+func (ed *Editor) dCommand(scopes [][]int) [][]int {
+	var offset, off, index int
+	outScopes := make([][]int, 0)
+	for _, scope := range scopes {
+		off = scope[1] - scope[0]
+		index = scope[0] - offset
+		ed.file = append(ed.file[:index], ed.file[index+off:]...)
+		offset += off
+		outScopes = append(outScopes, []int{index, index})
 	}
 	return outScopes
 }
