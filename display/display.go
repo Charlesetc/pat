@@ -10,8 +10,10 @@ const (
 
 var currentFile, currentLine []rune
 var width, height, currentScroll, currentCursor int
+var highlights [][]int
 var topBar bool
 var Log func([]rune)
+var LogS func(string)
 
 // Ranges over the currentFile and
 // returns the positions of each rune.
@@ -35,14 +37,45 @@ func viewHeight() int {
 func Draw() {
 	termbox.Clear(0, 0)
 	DrawBox()
-	var offset int
+
+	var offset, highindex int
+	var highlighting bool
+
 	if topBar {
 		offset = 4
 	}
-	overLines(viewSection(), func(i, x, y int, r rune) {
-		if r != '\n' {
-			termbox.SetCell(x+padding, y+offset, r, 0, 0)
+
+	charactersMissed, section := viewSection()
+	for highindex < len(highlights) && highlights[highindex][1] < charactersMissed {
+		highindex++
+	}
+	overLines(section, func(i, x, y int, r rune) {
+		i = i + charactersMissed
+		var light []int
+		if highindex < len(highlights) {
+			light = highlights[highindex]
 		}
+		switch {
+		case highindex >= len(highlights):
+			highlighting = false
+		case i < light[0]:
+			highlighting = false
+		case i < light[1]-1:
+			highlighting = true
+		case i == light[1]-1 && light[1]-light[0] == 1:
+			highlighting = true
+			highindex++
+		default:
+			highindex++
+		}
+		back := termbox.ColorDefault
+		front := termbox.ColorDefault
+		if highlighting {
+			back = termbox.ColorRed
+			//front = termbox.ColorBlue
+		}
+		// if r != '\n' {
+		termbox.SetCell(x+padding, y+offset, r, front, back)
 	})
 	termbox.Flush()
 }
@@ -88,9 +121,12 @@ func ScrollUp() {
 	Draw()
 }
 
-func viewSection() []rune {
-	var start, end int
+func viewSection() (int, []rune) {
+	var start, end, charactersMissed int
 	overLines(currentFile, func(i, x, y int, r rune) {
+		if y < currentScroll {
+			charactersMissed++
+		}
 		if y == currentScroll && x == 0 {
 			start = i
 		}
@@ -99,10 +135,12 @@ func viewSection() []rune {
 		}
 	})
 	if end == 0 { // Didn't reach the end.
-		end = len(currentFile) - 2
+		end = len(currentFile) - 2 // why minus 2?
 	}
-	// Log([]rune(fmt.Sprintf("%d - %d, %d", start, end, currentScroll)))
-	return currentFile[start:end]
+	if start > end {
+		start = end
+	}
+	return charactersMissed, currentFile[start:end]
 }
 
 func numberOfLines() int {
@@ -115,6 +153,10 @@ func numberOfLines() int {
 
 func Reset() {
 	termbox.Close()
+}
+
+func Highlight(scopes [][]int) {
+	highlights = scopes
 }
 
 func Resize() {

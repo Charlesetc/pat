@@ -60,7 +60,7 @@ Lines:
 		commands = append(commands, command)
 	}
 
-	LogS(fmt.Sprint(commands))
+	// LogS(fmt.Sprint(commands))
 
 	return commands
 }
@@ -135,6 +135,7 @@ func Poll() {
 			}
 
 			display.ShowFile([]rune(ed.String()))
+			display.Highlight(ed.Highlights())
 			display.Draw()
 
 		// Cursor Movement
@@ -192,6 +193,7 @@ func init() {
 
 	Log = makeLog()
 	display.Log = Log
+	display.LogS = LogS
 	input.Log = Log
 	input.LogS = LogS
 	editor.LogS = LogS

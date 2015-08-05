@@ -16,6 +16,10 @@ type Editor struct {
 	dot  [][]int
 }
 
+func (ed *Editor) Highlights() [][]int {
+	return ed.dot
+}
+
 func apply(f func([]int) [][]int, ints [][]int) [][]int {
 	outScopes := make([][]int, 0)
 	for _, scope := range ints {
