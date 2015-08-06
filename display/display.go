@@ -25,6 +25,7 @@ var LogS func(string)
 // returns the positions of each rune.
 func overLines(str []rune, f func(int, int, int, rune)) {
 	var x, y int
+	Log(str)
 	for i, r := range str {
 		f(i, x, y, r)
 		if r == '\n' || x >= (width-(3*padding)) {
@@ -85,7 +86,6 @@ func Draw() {
 			back = termbox.Attribute(0xff)
 			front = termbox.ColorBlack
 		}
-		// if r != '\n' {
 		lasty = y
 		termbox.SetCell(x+padding, y+offset, r, front, back)
 	})
@@ -159,7 +159,7 @@ func viewSection() (int, []rune) {
 	if len(currentFile) <= 1 {
 		return charactersMissed, currentFile
 	}
-	return charactersMissed, currentFile[start:end]
+	return charactersMissed, currentFile[start : end+1]
 }
 
 func numberOfLines() int {
