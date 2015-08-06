@@ -6,6 +6,7 @@ package editor
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"regexp"
 	"strconv"
 	"strings"
@@ -15,13 +16,18 @@ var LogS func(string)
 
 // One per file.
 type Editor struct {
-	file  []byte
-	dot   [][]int
-	saved [][]int
+	file     []byte
+	dot      [][]int
+	saved    [][]int
+	filename string
 }
 
 func (ed *Editor) SaveDot() {
 	ed.saved = ed.dot // might not work.
+}
+
+func (ed *Editor) Save() {
+	ioutil.WriteFile(ed.filename, ed.file, 0644) // 0644.(filePermission)
 }
 
 func (ed *Editor) UnSaveDot() {
@@ -171,8 +177,8 @@ func (ed *Editor) String() string {
 	return string(ed.file)
 }
 
-func NewEditor(file []byte) *Editor {
-	return &Editor{file, [][]int{[]int{0, len(file)}}, [][]int{}}
+func NewEditor(file []byte, name string) *Editor {
+	return &Editor{file, [][]int{[]int{0, len(file)}}, [][]int{}, name}
 }
 
 func (ed *Editor) xCommand(scope []int, re *regexp.Regexp) [][]int {

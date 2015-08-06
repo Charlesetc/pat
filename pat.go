@@ -33,6 +33,12 @@ func onlyHighlights(commands [][]string) bool {
 	return true
 }
 
+// func leadingdigits(str string) int {
+// 	for _, r := range str {
+// 		if
+// 	}
+// }
+
 func escapeSpace(str string) string {
 	str = strings.Replace(str, "\\\\", "&#doubleslash;", -1)
 	str = strings.Replace(str, "\\n", "\n", -1)
@@ -95,13 +101,18 @@ Lines:
 
 		case isLineCommand:
 			command = lineResult
+			LogS(fmt.Sprint(numberParsed))
 			lines[i] = lines[i][:numberParsed]
 			if numberParsed < len(c) {
 				i--
 			}
 		case c == "color":
 			display.RandomColor()
-			return [][]string{}
+			return [][]string{} // No commands
+			// saving
+		case c == "w":
+			ed.Save()
+			return [][]string{} // No commands
 		case c == "d":
 			command = []string{c}
 
@@ -329,7 +340,7 @@ func main() {
 		panic(err)
 	}
 
-	ed = editor.NewEditor(bytes)
+	ed = editor.NewEditor(bytes, files[0])
 
 	display.Show([]rune(string(bytes)), []rune{})
 	display.Draw()

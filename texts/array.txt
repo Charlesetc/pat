@@ -1,5 +1,4 @@
 apple
-orange
 pear
 kiwi
 watermelon

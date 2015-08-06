@@ -25,7 +25,6 @@ var LogS func(string)
 // returns the positions of each rune.
 func overLines(str []rune, f func(int, int, int, rune)) {
 	var x, y int
-	Log(str)
 	for i, r := range str {
 		f(i, x, y, r)
 		if r == '\n' || x >= (width-(3*padding)) {
