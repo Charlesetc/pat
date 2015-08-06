@@ -33,6 +33,14 @@ func onlyHighlights(commands [][]string) bool {
 	return true
 }
 
+func escapeSpace(str string) string {
+	str = strings.Replace(str, "\\\\", "&#doubleslash;", -1)
+	str = strings.Replace(str, "\\n", "\n", -1)
+	str = strings.Replace(str, "\\t", "\t", -1)
+	str = strings.Replace(str, "&#doubleslash;", "\\\\", -1)
+	return str
+}
+
 func lineCommand(command string) (bool, []string, int) {
 	var parsed bool
 	var output []string

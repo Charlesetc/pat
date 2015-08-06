@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 var LogS func(string)
@@ -25,6 +26,22 @@ func (ed *Editor) SaveDot() {
 
 func (ed *Editor) UnSaveDot() {
 	ed.dot = ed.saved
+}
+
+func escapeSpace(str string) string {
+	str = strings.Replace(str, "\\\\", "&#doubleslash;", -1)
+	str = strings.Replace(str, "\\n", "\n", -1)
+	str = strings.Replace(str, "\\t", "\t", -1)
+	str = strings.Replace(str, "&#doubleslash;", "\\\\", -1)
+	return str
+}
+
+// Because lines matter sometimes.
+func escapeRegex(str string) string {
+	str = strings.Replace(str, "\\\\", "&#doubleslash;", -1)
+	str = strings.Replace(str, "\\N", ".*\n", -1)
+	str = strings.Replace(str, "&#doubleslash;", "\\\\", -1)
+	return str
 }
 
 func (ed *Editor) nthLine(n int) (int, bool) {
@@ -92,27 +109,27 @@ func (ed *Editor) Command(name string, args []string) error {
 		}
 		ed.multiLineSelect(n1, n2)
 	case "x":
-		re, err := regexp.Compile(args[0])
+		re, err := regexp.Compile(escapeRegex(args[0]))
 		if err != nil {
 			return err
 		}
 		ed.dot = apply(func(s []int) [][]int { return ed.xCommand(s, re) }, ed.dot)
 	case "a":
-		ed.dot = ed.insertCommand(ed.dot, []byte(args[0]), false)
+		ed.dot = ed.insertCommand(ed.dot, []byte(escapeSpace(args[0])), false)
 	case "c":
-		ed.dot = ed.cCommand(ed.dot, []byte(args[0]))
+		ed.dot = ed.cCommand(ed.dot, []byte(escapeSpace(args[0])))
 	case "i":
-		ed.dot = ed.insertCommand(ed.dot, []byte(args[0]), true)
+		ed.dot = ed.insertCommand(ed.dot, []byte(escapeSpace(args[0])), true)
 	case "d":
 		ed.dot = ed.dCommand(ed.dot)
 	case "g":
-		re, err := regexp.Compile(args[0])
+		re, err := regexp.Compile(escapeRegex(args[0]))
 		if err != nil {
 			return err
 		}
 		ed.dot = apply(func(s []int) [][]int { return ed.matchCommand(s, re, true) }, ed.dot)
 	case "y":
-		re, err := regexp.Compile(args[0])
+		re, err := regexp.Compile(escapeRegex(args[0]))
 		if err != nil {
 			return err
 		}
