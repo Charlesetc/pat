@@ -97,7 +97,9 @@ Lines:
 
 		// Parse S
 		case c == "s":
-			command = []string{c, lines[i+1], lines[i+2]}
+			command1 := []string{"x", lines[i+1]}
+			commands = append(commands, command1)
+			command = []string{"c", lines[i+2]}
 			i += 2
 		// Everything else gets one argument.
 		default:
