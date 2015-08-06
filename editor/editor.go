@@ -204,9 +204,10 @@ func (ed *Editor) insertCommand(scopes [][]int, addition []byte, beginning bool)
 			j += addLength
 
 			if beginning {
-				outscopes[outscopeI] = []int{j - addLength, currentscope[1] + addLength}
+				outscopes[outscopeI] = []int{j - 1, j + addLength - 1}
 			} else {
-				outscopes[outscopeI] = []int{currentscope[0], j}
+				LogS(fmt.Sprint(currentscope[0], j))
+				outscopes[outscopeI] = []int{j - 1, j + addLength - 1}
 			}
 			outscopeI++
 			// LogS(fmt.Sprint(outscopes))
