@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/charlesetc/pat/display"
@@ -19,6 +20,37 @@ var files []string // filenames
 // var editors []*editor // editors for the filenames
 var ed *editor.Editor // the current editor.
 
+func lineCommand(command string) (bool, []string, int) {
+	var parsed bool
+	var output []string
+	var numberParsed int
+	switch {
+	case len(command) == 0:
+		parsed = false
+	case strings.ContainsRune(command, ','):
+		strs := strings.SplitN(command, ",", 2)
+		_, err1 := strconv.Atoi(strs[0])
+		n, err2 := strconv.Atoi(strs[1])
+		if (err1 != nil && strs[0] != "") || (err2 != nil && strs[1] != "$" && strs[1] != "") {
+			parsed = false
+			break
+		}
+		parsed = true
+		output = []string{",", strs[0], strs[1]}
+		numberParsed = len(strs[0]) + 1 + len(strconv.Itoa(n))
+		if len(strs[1]) == 0 {
+			numberParsed-- // because "" translates to 0
+		}
+	default:
+		n, err := strconv.Atoi(command)
+		parsed = err == nil
+		numberParsed = len(strconv.Itoa(n))
+		output = []string{"line", command}
+	}
+
+	return parsed, output, numberParsed
+}
+
 func parseLine(line string) [][]string {
 	commands := make([][]string, 0)
 
@@ -30,12 +62,25 @@ func parseLine(line string) [][]string {
 	var i int
 	var command []string
 	var c string
+
 Lines:
 	for i < len(lines) {
 		c = lines[i]
 		c = strings.Replace(c, " ", "", -1) // Get rid of space
+
+		isLineCommand, lineResult, numberParsed := lineCommand(c)
+
 		switch {
-		// Parse no-argument ones.
+
+		case isLineCommand:
+			command = lineResult
+			lines[i] = lines[i][:numberParsed]
+			if numberParsed < len(c) {
+				i--
+			}
+		case c == "color":
+			display.RandomColor()
+			return [][]string{}
 		case c == "d":
 			command = []string{c}
 
@@ -51,16 +96,17 @@ Lines:
 		// Parse S
 		case c == "s":
 			command = []string{c, lines[i+1], lines[i+2]}
-			i++
+			i += 2
 		// Everything else gets one argument.
 		default:
 			command = []string{c, lines[i+1]}
+			i++ // One argument
 		}
-		i += 2
+		i++ // for itself
 		commands = append(commands, command)
 	}
 
-	// LogS(fmt.Sprint(commands))
+	LogS(fmt.Sprint(commands))
 
 	return commands
 }
@@ -100,25 +146,25 @@ func Poll() {
 			display.Resize()
 			display.Draw()
 
-		case e.Key == 1: // Control-A
+		case e.Key == termbox.KeyCtrlA: // Control-A
 			input.CursorAtBeginning()
-		case e.Key == 3: // Control-C
-			Exit()
-		case e.Key == 5: // Control-E
+		case e.Key == termbox.KeyCtrlE: // Control-E
 			input.CursorAtEnd()
+		case e.Key == termbox.KeyCtrlC: // Control-C
+			Exit()
 
 		// Scrolling
-		case e.Key == 14 || e.Key == 65516:
+		case e.Key == termbox.KeyCtrlN || e.Key == termbox.KeyArrowDown:
 			display.ScrollDown()
-		case e.Key == 16 || e.Key == 65517:
+		case e.Key == termbox.KeyCtrlP || e.Key == termbox.KeyArrowUp:
 			display.ScrollUp()
 
-		case e.Key == 27:
+		case e.Key == termbox.KeyEsc:
 			input.Reset()
-		case e.Key == 32: //Space
+		case e.Key == termbox.KeySpace: //Space
 			input.AddRune(' ')
 			input.Draw()
-		case e.Key == 13: // Return
+		case e.Key == termbox.KeyEnter: // Return
 			runes := input.Runes()
 			input.Reset()
 			if len(runes) == 0 {
@@ -139,13 +185,13 @@ func Poll() {
 			display.Draw()
 
 		// Cursor Movement
-		case e.Key == 65515:
+		case e.Key == termbox.KeyArrowLeft:
 			input.CursorLeft()
-		case e.Key == 65514:
+		case e.Key == termbox.KeyArrowRight:
 			input.CursorRight()
 
 		// Delete Key
-		case e.Key == 127 || e.Key == 8:
+		case e.Key == termbox.KeyBackspace || e.Key == termbox.KeyBackspace2 || e.Key == termbox.KeyDelete:
 			input.Backspace()
 			input.Draw()
 		case e.Key == 0: // All other normal chars

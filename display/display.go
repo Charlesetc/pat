@@ -2,7 +2,12 @@
 
 package display
 
-import "github.com/nsf/termbox-go"
+import (
+	"math/rand"
+	"time"
+
+	"github.com/nsf/termbox-go"
+)
 
 const (
 	padding int = 2
@@ -10,6 +15,7 @@ const (
 
 var currentFile, currentLine []rune
 var width, height, currentScroll, currentCursor int
+var Color termbox.Attribute
 var highlights [][]int
 var topBar bool
 var Log func([]rune)
@@ -38,7 +44,7 @@ func Draw() {
 	termbox.Clear(0, 0)
 	DrawBox()
 
-	var offset, highindex int
+	var offset, highindex, lasty int
 	var highlighting bool
 
 	if topBar {
@@ -71,12 +77,16 @@ func Draw() {
 		back := termbox.ColorDefault
 		front := termbox.ColorDefault
 		if highlighting {
-			back = termbox.ColorRed
-			//front = termbox.ColorBlue
+			back = termbox.Attribute(0xff)
+			front = termbox.ColorBlack
 		}
 		// if r != '\n' {
+		lasty = y
 		termbox.SetCell(x+padding, y+offset, r, front, back)
 	})
+	for j := lasty + 5; j < height; j++ {
+		termbox.SetCell(padding, j, '~', termbox.ColorWhite, termbox.ColorDefault)
+	}
 	termbox.Flush()
 }
 
@@ -93,17 +103,18 @@ func DrawBox() {
 	if topBar {
 		offset = height - 4
 	}
+	color := Color
 	edit_box_width := width - 4
 	midx := 2
 	midy := height - 2 - offset
-	termbox.SetCell(midx-1, midy, '│', 0, 0)
-	termbox.SetCell(midx+edit_box_width, midy, '│', 0, 0)
-	termbox.SetCell(midx-1, midy-1, '┌', 0, 0)
-	termbox.SetCell(midx-1, midy+1, '└', 0, 0)
-	termbox.SetCell(midx+edit_box_width, midy-1, '┐', 0, 0)
-	termbox.SetCell(midx+edit_box_width, midy+1, '┘', 0, 0)
-	fill(midx, midy-1, edit_box_width, 1, termbox.Cell{Ch: '─'})
-	fill(midx, midy+1, edit_box_width, 1, termbox.Cell{Ch: '─'})
+	termbox.SetCell(midx-1, midy, '│', color, 0)
+	termbox.SetCell(midx+edit_box_width, midy, '│', color, 0)
+	termbox.SetCell(midx-1, midy-1, '┌', color, 0)
+	termbox.SetCell(midx-1, midy+1, '└', color, 0)
+	termbox.SetCell(midx+edit_box_width, midy-1, '┐', color, 0)
+	termbox.SetCell(midx+edit_box_width, midy+1, '┘', color, 0)
+	fill(midx, midy-1, edit_box_width, 1, termbox.Cell{Ch: '─', Fg: color})
+	fill(midx, midy+1, edit_box_width, 1, termbox.Cell{Ch: '─', Fg: color})
 	DrawLine()
 }
 
@@ -140,6 +151,9 @@ func viewSection() (int, []rune) {
 	if start > end {
 		start = end
 	}
+	if len(currentFile) <= 1 {
+		return charactersMissed, currentFile
+	}
 	return charactersMissed, currentFile[start:end]
 }
 
@@ -165,6 +179,8 @@ func Resize() {
 }
 
 func Init(bar bool) {
+	rand.Seed(int64(time.Now().Nanosecond()))
+	termbox.SetOutputMode(termbox.Output256)
 	termbox.Init()
 	Resize()
 	topBar = bar
@@ -195,6 +211,10 @@ func DrawLine() {
 		x++
 	}
 	termbox.Flush()
+}
+
+func RandomColor() {
+	Color = termbox.Attribute(rand.Intn(255))
 }
 
 func SetCursor(x int) {
