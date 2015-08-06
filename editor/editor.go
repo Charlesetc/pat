@@ -14,8 +14,17 @@ var LogS func(string)
 
 // One per file.
 type Editor struct {
-	file []byte
-	dot  [][]int
+	file  []byte
+	dot   [][]int
+	saved [][]int
+}
+
+func (ed *Editor) SaveDot() {
+	ed.saved = ed.dot // might not work.
+}
+
+func (ed *Editor) UnSaveDot() {
+	ed.dot = ed.saved
 }
 
 func (ed *Editor) nthLine(n int) (int, bool) {
@@ -120,7 +129,7 @@ func (ed *Editor) String() string {
 }
 
 func NewEditor(file []byte) *Editor {
-	return &Editor{file, [][]int{[]int{0, len(file)}}}
+	return &Editor{file, [][]int{[]int{0, len(file)}}, [][]int{}}
 }
 
 func (ed *Editor) xCommand(scope []int, re *regexp.Regexp) [][]int {

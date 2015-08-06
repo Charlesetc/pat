@@ -22,6 +22,17 @@ var files []string // filenames
 var ed *editor.Editor // the current editor.
 var commandHistory *stack.Stack
 
+func onlyHighlights(commands [][]string) bool {
+	for _, c := range commands {
+		switch c[0] {
+		case "", "g", "y", "lines", ",", "x":
+		default:
+			return false
+		}
+	}
+	return true
+}
+
 func lineCommand(command string) (bool, []string, int) {
 	var parsed bool
 	var output []string
@@ -184,6 +195,28 @@ func Poll() {
 			display.ShowFile([]rune(ed.String()))
 			display.Highlight(ed.Highlights())
 			display.Draw()
+		case e.Ch == '/':
+			runes := input.Runes()
+			// input.Reset()
+			if len(runes) == 0 {
+				break
+			}
+			commands := parseLine(string(runes))
+			ed.SaveDot()
+			if onlyHighlights(commands) {
+				for _, command := range commands {
+					ed.Command(command[0], command[1:])
+				}
+
+				display.Highlight(ed.Highlights())
+				input.AddRune(e.Ch)
+				display.Draw()
+				input.Draw()
+				ed.UnSaveDot()
+				break
+			}
+			input.AddRune(e.Ch)
+			input.Draw()
 
 		// // Arrow keys
 		// Cursor Movement
