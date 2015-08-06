@@ -104,9 +104,7 @@ func (ed *Editor) Command(name string, args []string) error {
 	case "i":
 		ed.dot = ed.insertCommand(ed.dot, []byte(args[0]), true)
 	case "d":
-		LogS(fmt.Sprint(ed.dot))
 		ed.dot = ed.dCommand(ed.dot)
-		LogS(fmt.Sprint(ed.dot))
 	case "g":
 		re, err := regexp.Compile(args[0])
 		if err != nil {
@@ -213,10 +211,9 @@ func (ed *Editor) insertCommand(scopes [][]int, addition []byte, beginning bool)
 			j += addLength
 
 			if beginning {
-				outscopes[outscopeI] = []int{j - 1, j + addLength - 1}
+				outscopes[outscopeI] = []int{j - addLength, j}
 			} else {
-				LogS(fmt.Sprint(currentscope[0], j))
-				outscopes[outscopeI] = []int{j - 1, j + addLength - 1}
+				outscopes[outscopeI] = []int{j - addLength, j}
 			}
 			outscopeI++
 			// LogS(fmt.Sprint(outscopes))
@@ -257,8 +254,8 @@ func (ed *Editor) cCommand(scopes [][]int, addition []byte) [][]int {
 	}
 	new_file := make([]byte, len(ed.file)+finalSum)
 
-	outscopes := make([][]int, len(scopes))
-	var outscopeI int
+	//outscopes := make([][]int, len(scopes))
+	var outscopes [][]int
 
 	var j, scopeIndex int
 	currentscope := scopes[scopeIndex]
@@ -277,9 +274,11 @@ func (ed *Editor) cCommand(scopes [][]int, addition []byte) [][]int {
 		if k == currentscope[0] {
 			copy(new_file[j:j+addLength], addition)
 			j += addLength
-
-			outscopes[outscopeI] = []int{currentscope[0], j}
-			outscopeI++
+			if addLength > 0 {
+				outscopes = append(outscopes, []int{j - addLength, j})
+			} else {
+				outscopes = append(outscopes, []int{j + addLength, j})
+			}
 			// Ignore those characters...
 			k += scopediff
 		}

@@ -22,7 +22,7 @@ func (s *Stack) Add(val interface{}) {
 	joint := newJoint(val)
 	joint.previous = s.start
 	s.start = joint
-	s.saved = nil
+	// s.saved = nil // weird but good for history.
 }
 
 func (s *Stack) Pop() (interface{}, error) {
