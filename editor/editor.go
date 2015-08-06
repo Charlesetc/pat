@@ -141,29 +141,86 @@ func (ed *Editor) matchCommand(scope []int, re *regexp.Regexp, keep bool) [][]in
 }
 
 // Assumes increasing indicies
+// func (ed *Editor) insertCommand(scopes [][]int, addition []byte, beginning bool) [][]int {
+// 	var offset, off, index int
+// 	outScopes := make([][]int, 0)
+// 	for _, scope := range scopes {
+// 		off = len(addition)
+// 		if beginning {
+// 			index = scope[0] + offset
+// 		} else {
+// 			index = scope[1] + offset
+// 		}
+//
+// 		ed.file = ed.file[:len(ed.file)+off+1]
+// 		ed.file[len(ed.file)-1] = 0
+// 		copy(ed.file[index+off:], ed.file[index:])
+// 		copy(ed.file[index:index+off], addition)
+//
+// 		outScopes = append(outScopes, []int{scope[0] + offset, index + off})
+//
+// 		offset += off
+// 	}
+// 	return outScopes
+// }
+
 func (ed *Editor) insertCommand(scopes [][]int, addition []byte, beginning bool) [][]int {
-	var offset, off, index int
-	outScopes := make([][]int, 0)
-	for _, scope := range scopes {
-		off = len(addition)
-		if beginning {
-			index = scope[0] + offset
-		} else {
-			index = scope[1] + offset
+	// No places do do anything, don't.
+	if len(scopes) == 0 {
+		return [][]int{}
+	}
+
+	var finalSum int
+	addLength := len(addition)
+	for range scopes {
+		finalSum += addLength
+	}
+	new_file := make([]byte, len(ed.file)+finalSum)
+
+	outscopes := make([][]int, len(scopes))
+	var outscopeI int
+
+	var startOrEnd int
+	if beginning {
+		startOrEnd = 0
+	} else {
+		startOrEnd = 1
+	}
+
+	var j, scopeIndex int
+	currentscope := scopes[scopeIndex]
+	for k := range ed.file {
+		// Iterate over the scopes as we go.
+		if k > currentscope[startOrEnd] {
+			scopeIndex++
+			if len(scopes) > scopeIndex {
+				currentscope = scopes[scopeIndex]
+			}
 		}
 
-		ed.file = ed.file[:len(ed.file)+off+1]
-		ed.file[len(ed.file)-1] = 0
-		copy(ed.file[index+off:], ed.file[index:])
-		copy(ed.file[index:index+off], addition)
+		// add the insertion
+		if k == currentscope[startOrEnd] {
+			copy(new_file[j:j+addLength], addition)
+			j += addLength
 
-		outScopes = append(outScopes, []int{scope[0] + offset, index + off})
+			if beginning {
+				outscopes[outscopeI] = []int{j - addLength, currentscope[1] + addLength}
+			} else {
+				outscopes[outscopeI] = []int{currentscope[0], j}
+			}
+			outscopeI++
+			// LogS(fmt.Sprint(outscopes))
+		}
 
-		offset += off
+		// continue copying
+		new_file[j] = ed.file[k]
+		j++
 	}
-	return outScopes
+	ed.file = new_file
+	return outscopes
 }
 
+// fast because doesn't allocate memory
 func (ed *Editor) dCommand(scopes [][]int) [][]int {
 	var offset, off, index int
 	outScopes := make([][]int, 0)
@@ -178,18 +235,51 @@ func (ed *Editor) dCommand(scopes [][]int) [][]int {
 }
 
 func (ed *Editor) cCommand(scopes [][]int, addition []byte) [][]int {
-	var offset, off, index int
-	outScopes := make([][]int, 0)
-	for _, scope := range scopes {
-		off = len(addition) - (scope[1] - scope[0])
-		insert := len(addition)
-		index = scope[0] + offset
-		LogS(fmt.Sprint(len(ed.file), off, index))
-		ed.file = ed.file[:len(ed.file)+off]
-		copy(ed.file[index+insert:], ed.file[index+(scope[1]-scope[0]):])
-		copy(ed.file[index:index+insert], addition)
-		offset += off
-		outScopes = append(outScopes, []int{index, index})
+	// No places do do anything, don't.
+	if len(scopes) == 0 {
+		return [][]int{}
 	}
-	return outScopes
+
+	var finalSum int
+	addLength := len(addition)
+	for _, scope := range scopes {
+		finalSum += addLength - (scope[1] - scope[0])
+	}
+	new_file := make([]byte, len(ed.file)+finalSum)
+
+	outscopes := make([][]int, len(scopes))
+	var outscopeI int
+
+	var j, scopeIndex int
+	currentscope := scopes[scopeIndex]
+	for k := 0; k < len(ed.file); k++ {
+		scopediff := currentscope[1] - currentscope[0]
+
+		// Iterate over the scopes as we go.
+		if k > currentscope[1] {
+			scopeIndex++
+			if len(scopes) > scopeIndex {
+				currentscope = scopes[scopeIndex]
+			}
+		}
+
+		// add the insertion
+		if k == currentscope[0] {
+			copy(new_file[j:j+addLength], addition)
+			j += addLength
+
+			outscopes[outscopeI] = []int{currentscope[0], j}
+			outscopeI++
+			// Ignore those characters...
+			k += scopediff
+		}
+
+		// continue copying
+		if len(ed.file) > k && len(new_file) > j {
+			new_file[j] = ed.file[k]
+		}
+		j++
+	}
+	ed.file = new_file
+	return outscopes
 }

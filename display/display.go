@@ -58,8 +58,13 @@ func Draw() {
 	overLines(section, func(i, x, y int, r rune) {
 		i = i + charactersMissed
 		var light []int
+	Retry:
 		if highindex < len(highlights) {
 			light = highlights[highindex]
+			if len(light) != 2 {
+				highindex++
+				goto Retry
+			}
 		}
 		switch {
 		case highindex >= len(highlights):

@@ -109,6 +109,10 @@ func Runes() []rune {
 	return currentLine
 }
 
+func SetRunes(runes []rune) {
+	currentLine = runes
+}
+
 func Reset() {
 	currentLine = []rune{}
 	currentScroll = 0

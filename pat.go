@@ -12,6 +12,7 @@ import (
 	"github.com/charlesetc/pat/display"
 	"github.com/charlesetc/pat/editor"
 	"github.com/charlesetc/pat/input"
+	"github.com/charlesetc/pat/stack"
 	"github.com/nsf/termbox-go"
 )
 
@@ -19,6 +20,7 @@ var Log func([]rune)
 var files []string // filenames
 // var editors []*editor // editors for the filenames
 var ed *editor.Editor // the current editor.
+var commandHistory *stack.Stack
 
 func lineCommand(command string) (bool, []string, int) {
 	var parsed bool
@@ -153,10 +155,10 @@ func Poll() {
 		case e.Key == termbox.KeyCtrlC: // Control-C
 			Exit()
 
-		// Scrolling
-		case e.Key == termbox.KeyCtrlN || e.Key == termbox.KeyArrowDown:
+			// Scrolling
+		case e.Key == termbox.KeyCtrlN:
 			display.ScrollDown()
-		case e.Key == termbox.KeyCtrlP || e.Key == termbox.KeyArrowUp:
+		case e.Key == termbox.KeyCtrlP:
 			display.ScrollUp()
 
 		case e.Key == termbox.KeyEsc:
@@ -166,14 +168,11 @@ func Poll() {
 			input.Draw()
 		case e.Key == termbox.KeyEnter: // Return
 			runes := input.Runes()
+			commandHistory.Add(runes)
 			input.Reset()
 			if len(runes) == 0 {
 				break
 			}
-			// err := ed.Command(string(runes[0]), string(runes[1:]))
-			// if err != nil {
-			// 	panic(err) // for the time being..
-			// }
 
 			commands := parseLine(string(runes))
 			for _, command := range commands {
@@ -184,11 +183,34 @@ func Poll() {
 			display.Highlight(ed.Highlights())
 			display.Draw()
 
+		// // Arrow keys
 		// Cursor Movement
 		case e.Key == termbox.KeyArrowLeft:
 			input.CursorLeft()
 		case e.Key == termbox.KeyArrowRight:
 			input.CursorRight()
+		case e.Key == termbox.KeyArrowUp:
+			past, err := commandHistory.Pop()
+			if err != nil {
+				// Empty stack.
+				// show alert later.
+				break
+			}
+			input.Reset()
+			input.SetRunes(past.([]rune))
+			input.Draw()
+			break
+		case e.Key == termbox.KeyArrowDown:
+			input.Reset()
+			past, err := commandHistory.UnPop()
+			if err != nil {
+				// Empty stack.
+				// show alert later.
+				break
+			}
+			input.SetRunes(past.([]rune))
+			input.Draw()
+			break
 
 		// Delete Key
 		case e.Key == termbox.KeyBackspace || e.Key == termbox.KeyBackspace2 || e.Key == termbox.KeyDelete:
@@ -236,6 +258,7 @@ func init() {
 	}
 
 	display.Init(!(contains(flags, "--bottom") || contains(flags, "-b"))) // topbar
+	commandHistory = stack.New()
 
 	Log = makeLog()
 	display.Log = Log
