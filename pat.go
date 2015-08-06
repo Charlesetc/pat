@@ -153,6 +153,31 @@ func makeLog() func([]rune) {
 	}
 }
 
+func parseSlash() {
+	runes := input.Runes()
+	defer func() {
+		input.AddRune('/')
+		input.Draw()
+	}()
+
+	// input.Reset()
+	if len(runes) == 0 {
+		return
+	}
+	commands := parseLine(string(runes))
+	ed.SaveDot()
+	if onlyHighlights(commands) {
+		for _, command := range commands {
+			ed.Command(command[0], command[1:])
+		}
+
+		display.Highlight(ed.Highlights())
+		display.Draw()
+		ed.UnSaveDot()
+		return
+	}
+}
+
 func LogS(str string) {
 	Log([]rune(str))
 }
@@ -209,27 +234,7 @@ func Poll() {
 			display.Highlight(ed.Highlights())
 			display.Draw()
 		case e.Ch == '/':
-			runes := input.Runes()
-			// input.Reset()
-			if len(runes) == 0 {
-				break
-			}
-			commands := parseLine(string(runes))
-			ed.SaveDot()
-			if onlyHighlights(commands) {
-				for _, command := range commands {
-					ed.Command(command[0], command[1:])
-				}
-
-				display.Highlight(ed.Highlights())
-				input.AddRune(e.Ch)
-				display.Draw()
-				input.Draw()
-				ed.UnSaveDot()
-				break
-			}
-			input.AddRune(e.Ch)
-			input.Draw()
+			parseSlash()
 
 		// // Arrow keys
 		// Cursor Movement

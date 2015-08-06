@@ -82,6 +82,34 @@ func (ed *Editor) multiLineSelect(l1, l2 int) error {
 
 func (ed *Editor) Command(name string, args []string) error {
 	switch name {
+	case "", "?":
+		if args[0] == "" {
+			return nil // when there's just a slash
+		}
+		re, err := regexp.Compile(escapeRegex(args[0]))
+		if err != nil {
+			return err
+		}
+		var newScope []int
+		for _, scope := range ed.dot {
+			if name == "" {
+				newScope = re.FindIndex(ed.file[scope[0]:scope[1]])
+			} else {
+				indexes := re.FindAllIndex(ed.file[scope[0]:scope[1]], -1)
+				if len(indexes) == 0 {
+					newScope = nil
+				} else {
+					newScope = indexes[len(indexes)-1]
+				}
+			}
+			if newScope == nil {
+				continue
+			}
+			ed.dot = [][]int{[]int{newScope[0] + scope[0], newScope[1] + scope[0]}}
+			LogS(fmt.Sprint(ed.dot))
+			return nil
+		}
+		return errors.New("No match found.")
 	case "line":
 		n, err := strconv.Atoi(args[0])
 		if err != nil {
